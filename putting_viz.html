@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Strokes Gained Putting – Tee Time Effect</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:        #07201b;
+    --bg-card:   #0c2e27;
+    --bg-row:    #0f3530;
+    --accent:    #c8f542;
+    --accent2:   #5dffd3;
+    --negative:  #ff5f4b;
+    --positive:  #c8f542;
+    --text:      #e8f5e2;
+    --muted:     #6a9e88;
+    --border:    #1e4f43;
+    --mono:      'IBM Plex Mono', monospace;
+    --sans:      'IBM Plex Sans', sans-serif;
+    --serif:     'Playfair Display', serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 0 0 60px;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Subtle grid overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(200,245,66,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,245,66,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Header ── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 48px 0 28px;
+    margin-bottom: 36px;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 22px;
+    height: 1px;
+    background: var(--accent);
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-size: clamp(26px, 5vw, 40px);
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--text);
+    margin-bottom: 14px;
+    letter-spacing: -0.01em;
+  }
+  h1 em {
+    color: var(--accent);
+    font-style: italic;
+  }
+
+  .dek {
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--muted);
+    font-weight: 300;
+    max-width: 580px;
+  }
+
+  /* ── Key finding callout ── */
+  .finding {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 18px 22px;
+    margin-bottom: 40px;
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+  }
+  .finding-stat {
+    font-family: var(--mono);
+    font-size: 38px;
+    font-weight: 500;
+    color: var(--negative);
+    line-height: 1;
+    white-space: nowrap;
+    flex-shrink: 0;
+    letter-spacing: -0.02em;
+  }
+  .finding-label {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--muted);
+    padding-top: 4px;
+  }
+  .finding-label strong {
+    display: block;
+    color: var(--text);
+    font-size: 14px;
+    margin-bottom: 3px;
+    font-weight: 500;
+  }
+
+  /* ── Section label ── */
+  .section-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  /* ── Chart area ── */
+  .chart-container {
+    margin-bottom: 44px;
+  }
+
+  .chart-title {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .chart-sub {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--mono);
+    margin-bottom: 22px;
+  }
+
+  /* Bar chart */
+  .bar-chart {
+    width: 100%;
+  }
+
+  .bar-row {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 0 16px;
+    align-items: center;
+    margin-bottom: 20px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .bar-row:hover { opacity: 0.85; }
+  .bar-row:hover .tooltip { opacity: 1; transform: translateY(0); }
+
+  .course-name {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    text-align: right;
+    line-height: 1.3;
+  }
+
+  .bars-wrap {
+    position: relative;
+  }
+
+  /* Zero line */
+  .zero-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba(200,245,66,0.3);
+    z-index: 2;
+    pointer-events: none;
+  }
+  .zero-label {
+    position: absolute;
+    top: -18px;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+    transform: translateX(-50%);
+  }
+
+  .bar-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 8px 0;
+    position: relative;
+  }
+
+  .bar-track {
+    height: 16px;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .bar-fill {
+    height: 100%;
+    position: absolute;
+    transition: width 0.9s cubic-bezier(0.16,1,0.3,1);
+    border-radius: 1px;
+  }
+  .bar-fill.positive {
+    background: var(--positive);
+    left: var(--zero);
+    width: 0;
+  }
+  .bar-fill.negative {
+    background: var(--negative);
+    right: calc(100% - var(--zero));
+    width: 0;
+  }
+
+  .bar-val {
+    font-family: var(--mono);
+    font-size: 10px;
+    position: absolute;
+    color: var(--text);
+    white-space: nowrap;
+    line-height: 1;
+  }
+  .bar-val.pos-val { left: calc(var(--zero) + 4px); }
+  .bar-val.neg-val { right: calc(100% - var(--zero) + 4px); }
+
+  .bar-label-inline {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    margin-bottom: 2px;
+  }
+
+  /* Axis ticks */
+  .axis {
+    display: flex;
+    position: relative;
+    height: 20px;
+    margin-top: 4px;
+    margin-left: 196px;
+  }
+  .tick {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+    position: absolute;
+    transform: translateX(-50%);
+  }
+
+  /* Tooltip */
+  .tooltip {
+    opacity: 0;
+    transform: translateY(4px);
+    transition: all 0.2s;
+    position: absolute;
+    right: 0;
+    top: -68px;
+    background: #1a4a3f;
+    border: 1px solid var(--accent);
+    padding: 10px 14px;
+    z-index: 10;
+    pointer-events: none;
+    white-space: nowrap;
+    min-width: 180px;
+  }
+  .tooltip-course {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .tooltip-val { font-weight: 500; }
+  .tooltip-val.neg { color: var(--negative); }
+  .tooltip-val.pos { color: var(--positive); }
+
+  /* ── Dot plot / lollipop ── */
+  .lollipop-container {
+    margin-bottom: 44px;
+  }
+  .lollipop-svg {
+    width: 100%;
+    overflow: visible;
+  }
+
+  /* ── Data table ── */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 44px;
+    font-size: 13px;
+  }
+  .data-table thead th {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+    padding: 0 12px 10px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 400;
+  }
+  .data-table thead th:not(:first-child) { text-align: right; }
+  .data-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+    cursor: default;
+  }
+  .data-table tbody tr:hover { background: var(--bg-row); }
+  .data-table td {
+    padding: 14px 12px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--text);
+  }
+  .data-table td:not(:first-child) {
+    text-align: right;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .data-table td.positive { color: var(--positive); }
+  .data-table td.negative { color: var(--negative); }
+
+  /* Sparkline diff indicator */
+  .diff-pill {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 2px;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  .diff-pill.neg { background: rgba(255,95,75,0.15); color: var(--negative); }
+  .diff-pill.pos { background: rgba(200,245,66,0.12); color: var(--positive); }
+
+  /* ── Legend ── */
+  .legend {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+  .legend-swatch {
+    width: 24px;
+    height: 3px;
+    border-radius: 2px;
+  }
+
+  /* ── Footer ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding-top: 20px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    line-height: 1.7;
+    letter-spacing: 0.04em;
+  }
+  footer span { color: var(--accent); }
+
+  /* Animate in on load */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .wrapper > * {
+    animation: fadeUp 0.6s ease both;
+  }
+  header       { animation-delay: 0.05s; }
+  .finding     { animation-delay: 0.15s; }
+  .chart-container { animation-delay: 0.25s; }
+  .lollipop-container { animation-delay: 0.3s; }
+  .table-section { animation-delay: 0.35s; }
+  footer       { animation-delay: 0.4s; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- Header -->
+  <header>
+    <div class="eyebrow">Data Analysis · PGA Tour · Last 10 Seasons</div>
+    <h1>The Morning <em>Putting</em> Advantage</h1>
+    <p class="dek">Across marquee Tour venues, players teeing off before 10 a.m. consistently outperform afternoon starters on the greens — a gap that may be reshaping draw strategy and course setup decisions.</p>
+  </header>
+
+  <!-- Key finding -->
+  <div class="finding">
+    <div class="finding-stat">−0.20</div>
+    <div class="finding-label">
+      <strong>Riviera CC: sharpest afternoon drop</strong>
+      Morning starters gain +0.09 strokes gained putting per round. After 10 a.m., that flips to −0.11 — a swing of 0.20 strokes, the largest gap across surveyed courses.
+    </div>
+  </div>
+
+  <!-- Bar chart -->
+  <div class="chart-container">
+    <div class="section-label">Chart 01 of 02</div>
+    <div class="chart-title">Strokes Gained Putting by Tee Time</div>
+    <div class="chart-sub">Per round, last 10 seasons · Hover for details</div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--positive)"></div> Before 10 AM</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--negative)"></div> After 10 AM</div>
+    </div>
+
+    <div class="bar-chart" id="barChart">
+      <!-- JS rendered -->
+    </div>
+
+    <div class="axis" id="axis"></div>
+  </div>
+
+  <!-- Lollipop / difference chart -->
+  <div class="lollipop-container">
+    <div class="section-label">Chart 02 of 02</div>
+    <div class="chart-title">Tee Time Putting Gap</div>
+    <div class="chart-sub">Difference (Before 10 AM minus After 10 AM) · larger gap = greater advantage for morning starters</div>
+    <svg class="lollipop-svg" id="lollipopSvg" viewBox="0 0 600 160"></svg>
+  </div>
+
+  <!-- Table -->
+  <div class="table-section">
+    <div class="section-label">Full Data</div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Course</th>
+          <th>Before 10 AM</th>
+          <th>After 10 AM</th>
+          <th>Difference</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <footer>
+    <span>Source:</span> PGA Tour ShotLink data, aggregated over 10 seasons · <span>Metric:</span> Strokes Gained: Putting per round · Values reflect field average by tee time window
+  </footer>
+
+</div>
+
+<script>
+const data = [
+  { course: "Torrey Pines (South)", before: 0.05,  after: -0.07, diff: -0.12 },
+  { course: "Pebble Beach",         before: 0.03,  after: -0.08, diff: -0.11 },
+  { course: "Riviera CC",           before: 0.09,  after: -0.11, diff: -0.20 },
+];
+
+const minVal = -0.14;
+const maxVal =  0.12;
+const range  = maxVal - minVal;
+const zeroPct = (0 - minVal) / range * 100; // % position of zero
+
+// ─── Bar Chart ───────────────────────────────────
+const chart = document.getElementById('barChart');
+
+data.forEach(d => {
+  const row = document.createElement('div');
+  row.className = 'bar-row';
+
+  const beforePct = Math.abs(d.before) / range * 100;
+  const afterPct  = Math.abs(d.after)  / range * 100;
+
+  row.innerHTML = `
+    <div class="course-name">${d.course}</div>
+    <div class="bars-wrap">
+      <div class="zero-line" style="left:${zeroPct}%"><span class="zero-label">0</span></div>
+      <div class="bar-group">
+        <div class="bar-label-inline">Before 10 AM</div>
+        <div class="bar-track">
+          <div class="bar-fill ${d.before >= 0 ? 'positive' : 'negative'}"
+               style="--zero:${zeroPct}%; width:0"
+               data-width="${beforePct}%"></div>
+          <div class="bar-val ${d.before >= 0 ? 'pos-val' : 'neg-val'}"
+               style="opacity:0" data-val="${d.before >= 0 ? '+' : ''}${d.before.toFixed(2)}"></div>
+        </div>
+        <div class="bar-label-inline">After 10 AM</div>
+        <div class="bar-track">
+          <div class="bar-fill ${d.after >= 0 ? 'positive' : 'negative'}"
+               style="--zero:${zeroPct}%; width:0"
+               data-width="${afterPct}%"></div>
+          <div class="bar-val ${d.after >= 0 ? 'pos-val' : 'neg-val'}"
+               style="opacity:0" data-val="${d.after >= 0 ? '+' : ''}${d.after.toFixed(2)}"></div>
+        </div>
+      </div>
+      <div class="tooltip">
+        <div class="tooltip-course">${d.course}</div>
+        <div class="tooltip-row"><span>Before 10 AM</span><span class="tooltip-val ${d.before>=0?'pos':'neg'}">${d.before>=0?'+':''}${d.before.toFixed(2)}</span></div>
+        <div class="tooltip-row"><span>After 10 AM</span><span class="tooltip-val ${d.after>=0?'pos':'neg'}">${d.after>=0?'+':''}${d.after.toFixed(2)}</span></div>
+        <div class="tooltip-row"><span>Difference</span><span class="tooltip-val neg">${d.diff.toFixed(2)}</span></div>
+      </div>
+    </div>`;
+  chart.appendChild(row);
+});
+
+// Animate bars in
+setTimeout(() => {
+  document.querySelectorAll('.bar-fill').forEach(bar => {
+    bar.style.width = bar.dataset.width;
+  });
+  setTimeout(() => {
+    document.querySelectorAll('.bar-val').forEach(v => {
+      v.textContent = v.dataset.val;
+      v.style.opacity = '1';
+    });
+  }, 700);
+}, 300);
+
+// Axis ticks
+const axisEl = document.getElementById('axis');
+[-0.10, -0.05, 0, 0.05, 0.10].forEach(t => {
+  const pct = (t - minVal) / range * 100;
+  const tick = document.createElement('div');
+  tick.className = 'tick';
+  tick.style.left = pct + '%';
+  tick.textContent = (t >= 0 ? '+' : '') + t.toFixed(2);
+  axisEl.appendChild(tick);
+});
+
+// ─── Lollipop SVG ────────────────────────────────
+const svg = document.getElementById('lollipopSvg');
+const svgW = 600, svgH = 160;
+const lPad = 200, rPad = 30, tPad = 50, bPad = 30;
+const plotW = svgW - lPad - rPad;
+const plotH = svgH - tPad - bPad;
+const barH  = plotH / data.length;
+
+const diffMin = -0.22, diffMax = 0.02;
+const diffRange = diffMax - diffMin;
+const xScale = v => lPad + (v - diffMin) / diffRange * plotW;
+const zeroX  = xScale(0);
+
+// Zero line
+const zl = document.createElementNS('http://www.w3.org/2000/svg','line');
+zl.setAttribute('x1', zeroX); zl.setAttribute('x2', zeroX);
+zl.setAttribute('y1', tPad - 10); zl.setAttribute('y2', svgH - bPad + 6);
+zl.setAttribute('stroke','rgba(200,245,66,0.25)'); zl.setAttribute('stroke-width','1');
+svg.appendChild(zl);
+
+const zeroTxt = document.createElementNS('http://www.w3.org/2000/svg','text');
+zeroTxt.setAttribute('x', zeroX); zeroTxt.setAttribute('y', tPad - 14);
+zeroTxt.setAttribute('text-anchor','middle');
+zeroTxt.setAttribute('fill','#6a9e88'); zeroTxt.setAttribute('font-family',"'IBM Plex Mono', monospace");
+zeroTxt.setAttribute('font-size','9'); zeroTxt.textContent = '0';
+svg.appendChild(zeroTxt);
+
+// Tick marks
+[-0.20, -0.15, -0.10, -0.05].forEach(t => {
+  const tx = xScale(t);
+  const tl = document.createElementNS('http://www.w3.org/2000/svg','line');
+  tl.setAttribute('x1',tx); tl.setAttribute('x2',tx);
+  tl.setAttribute('y1', svgH - bPad); tl.setAttribute('y2', svgH - bPad + 4);
+  tl.setAttribute('stroke','#1e4f43'); tl.setAttribute('stroke-width','1');
+  svg.appendChild(tl);
+  const tt = document.createElementNS('http://www.w3.org/2000/svg','text');
+  tt.setAttribute('x',tx); tt.setAttribute('y', svgH - bPad + 14);
+  tt.setAttribute('text-anchor','middle');
+  tt.setAttribute('fill','#6a9e88'); tt.setAttribute('font-family',"'IBM Plex Mono', monospace");
+  tt.setAttribute('font-size','9'); tt.textContent = t.toFixed(2);
+  svg.appendChild(tt);
+});
+
+data.forEach((d, i) => {
+  const cy = tPad + i * barH + barH / 2;
+  const cx = xScale(d.diff);
+  const isNeg = d.diff < 0;
+
+  // Course label
+  const label = document.createElementNS('http://www.w3.org/2000/svg','text');
+  label.setAttribute('x', lPad - 12); label.setAttribute('y', cy + 4);
+  label.setAttribute('text-anchor','end');
+  label.setAttribute('fill','#e8f5e2'); label.setAttribute('font-family',"'IBM Plex Sans', sans-serif");
+  label.setAttribute('font-size','12'); label.setAttribute('font-weight','500');
+  label.textContent = d.course;
+  svg.appendChild(label);
+
+  // Connector line
+  const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+  line.setAttribute('x1', zeroX); line.setAttribute('x2', zeroX);
+  line.setAttribute('y1', cy);    line.setAttribute('y2', cy);
+  line.setAttribute('stroke', isNeg ? '#ff5f4b' : '#c8f542');
+  line.setAttribute('stroke-width','2');
+  line.setAttribute('opacity','0.7');
+  line.style.transition = 'x2 0.9s cubic-bezier(0.16,1,0.3,1)';
+  svg.appendChild(line);
+
+  // Dot (animate)
+  const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  circle.setAttribute('cx', zeroX); circle.setAttribute('cy', cy);
+  circle.setAttribute('r','6');
+  circle.setAttribute('fill', isNeg ? '#ff5f4b' : '#c8f542');
+  circle.setAttribute('stroke', isNeg ? '#ff5f4b' : '#c8f542');
+  circle.setAttribute('stroke-width','2');
+  circle.style.transition = 'cx 0.9s cubic-bezier(0.16,1,0.3,1)';
+  svg.appendChild(circle);
+
+  // Diff label
+  const diffLabel = document.createElementNS('http://www.w3.org/2000/svg','text');
+  diffLabel.setAttribute('x', cx - 10); diffLabel.setAttribute('y', cy - 11);
+  diffLabel.setAttribute('text-anchor','middle');
+  diffLabel.setAttribute('fill', isNeg ? '#ff5f4b' : '#c8f542');
+  diffLabel.setAttribute('font-family',"'IBM Plex Mono', monospace");
+  diffLabel.setAttribute('font-size','10'); diffLabel.setAttribute('font-weight','500');
+  diffLabel.setAttribute('opacity','0');
+  diffLabel.textContent = d.diff.toFixed(2);
+  diffLabel.style.transition = 'opacity 0.3s 0.9s';
+  svg.appendChild(diffLabel);
+
+  setTimeout(() => {
+    line.setAttribute('x2', cx);
+    circle.setAttribute('cx', cx);
+    diffLabel.setAttribute('opacity','1');
+  }, 400 + i * 120);
+});
+
+// ─── Table ───────────────────────────────────────
+const tbody = document.getElementById('tableBody');
+data.forEach(d => {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>${d.course}</td>
+    <td class="${d.before >= 0 ? 'positive' : 'negative'}">${d.before >= 0 ? '+' : ''}${d.before.toFixed(2)}</td>
+    <td class="${d.after >= 0 ? 'positive' : 'negative'}">${d.after >= 0 ? '+' : ''}${d.after.toFixed(2)}</td>
+    <td><span class="diff-pill ${d.diff < 0 ? 'neg' : 'pos'}">${d.diff.toFixed(2)}</span></td>`;
+  tbody.appendChild(tr);
+});
+</script>
+</body>
+</html>
